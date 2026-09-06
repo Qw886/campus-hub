@@ -2,10 +2,12 @@ package com.campushub.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campushub.common.exception.BusinessException;
+import com.campushub.dto.LoginRequest;
 import com.campushub.dto.RegisterRequest;
 import com.campushub.entity.SysUser;
 import com.campushub.mapper.SysUserMapper;
 import com.campushub.service.UserService;
+import com.campushub.vo.LoginResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -73,5 +75,47 @@ public class UserServiceImpl implements UserService {
         if (affectedRows != 1) {
             throw new BusinessException(500, "注册失败");
         }
+    }
+
+    @Override
+    public LoginResponse login(LoginRequest request) {
+        // 1. 根据用户名查询用户
+        LambdaQueryWrapper<SysUser> queryWrapper =
+                new LambdaQueryWrapper<>();
+
+        queryWrapper.eq(
+                SysUser::getUsername,
+                request.getUsername()
+        );
+
+        SysUser user = sysUserMapper.selectOne(queryWrapper);
+
+        // 2. 用户不存在
+        if (user == null) {
+            throw new BusinessException(401, "用户名或密码错误");
+        }
+
+        // 3. 验证密码
+        boolean passwordMatches = passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword()
+        );
+
+        if (!passwordMatches) {
+            throw new BusinessException(401, "用户名或密码错误");
+        }
+
+        // 4. 检查账号状态
+        if (user.getStatus() != 1) {
+            throw new BusinessException(403, "账号已禁用");
+        }
+
+        // 5. 转换成安全的登录响应
+        return new LoginResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getNickname(),
+                user.getRole()
+        );
     }
 }

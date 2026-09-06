@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.campushub.dto.LoginRequest;
+import com.campushub.vo.LoginResponse;
 
 @RestController
 @RequestMapping("/api/users")
@@ -26,4 +28,15 @@ public class UserController {
         userService.register(request);
         return Result.success();
     }
+
+    @PostMapping("/login")
+    public Result<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        LoginResponse response = userService.login(request);
+
+        return Result.success(response);
+    }
+
+
 }
