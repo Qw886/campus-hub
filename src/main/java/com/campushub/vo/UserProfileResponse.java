@@ -3,25 +3,22 @@ package com.campushub.vo;
 import lombok.Getter;
 
 @Getter
-public class LoginResponse {
+public class UserProfileResponse {
 
     private final Long id;
     private final String username;
     private final String nickname;
     private final String role;
-    private final String token;
 
-    public LoginResponse(
+    public UserProfileResponse(
             Long id,
             String username,
             String nickname,
-            String role,
-            String token
+            String role
     ) {
         this.id = id;
         this.username = username;
         this.nickname = nickname;
         this.role = role;
-        this.token = token;
     }
 }

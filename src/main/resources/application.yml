@@ -15,3 +15,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  secret: ${CAMPUS_HUB_JWT_SECRET}
+  expiration-seconds: 7200

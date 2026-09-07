@@ -11,19 +11,24 @@ import com.campushub.vo.LoginResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import com.campushub.service.JwtService;
+import com.campushub.vo.UserProfileResponse;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public UserServiceImpl(
             SysUserMapper sysUserMapper,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
     ) {
         this.sysUserMapper = sysUserMapper;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -110,8 +115,32 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(403, "账号已禁用");
         }
 
-        // 5. 转换成安全的登录响应
+        // 5. 身份校验通过后，生成登录令牌
+        String token = jwtService.generateToken(user.getId());
+
+        // 6. 返回用户信息和令牌
         return new LoginResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getNickname(),
+                user.getRole(),
+                token
+        );
+    }
+
+    @Override
+    public UserProfileResponse getCurrentUser(Long userId) {
+        SysUser user = sysUserMapper.selectById(userId);
+
+        if (user == null) {
+            throw new BusinessException(401, "用户不存在，请重新登录");
+        }
+
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
+            throw new BusinessException(403, "账号已禁用");
+        }
+
+        return new UserProfileResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
