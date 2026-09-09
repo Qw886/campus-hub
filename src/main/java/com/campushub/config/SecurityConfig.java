@@ -43,6 +43,10 @@ public class SecurityConfig {
                         "/api/users/register",
                         "/api/users/login"
                 ).permitAll()
+                .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/activity-categories"
+                ).permitAll()
                 .anyRequest().authenticated()
         );
 
