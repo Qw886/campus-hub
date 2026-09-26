@@ -47,6 +47,22 @@ public class SecurityConfig {
                         HttpMethod.GET,
                         "/api/activity-categories"
                 ).permitAll()
+                .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/activities"
+                ).permitAll()
+                .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/activities/{id}"
+                ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                .requestMatchers("/api/users/me/signups", "/api/users/me/signups/**").hasRole("USER")
+                .requestMatchers(HttpMethod.POST, "/api/activities/*/signups").hasRole("USER")
+                .requestMatchers(HttpMethod.DELETE, "/api/activities/*/signups").hasRole("USER")
+                .requestMatchers(HttpMethod.POST, "/api/activities/*/checkins").hasRole("USER")
+                .requestMatchers("/api/organizer/**").hasRole("ORGANIZER")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/test/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
         );
 

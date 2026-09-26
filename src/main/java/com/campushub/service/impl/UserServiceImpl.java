@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campushub.common.exception.BusinessException;
 import com.campushub.dto.LoginRequest;
 import com.campushub.dto.RegisterRequest;
+import com.campushub.dto.UpdateProfileRequest;
 import com.campushub.entity.SysUser;
 import com.campushub.mapper.SysUserMapper;
 import com.campushub.service.UserService;
@@ -144,7 +145,20 @@ public class UserServiceImpl implements UserService {
                 user.getId(),
                 user.getUsername(),
                 user.getNickname(),
-                user.getRole()
+                user.getRole(),
+                user.getPhone(),
+                user.getAvatar()
         );
+    }
+
+    @Override
+    public UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
+        SysUser user = sysUserMapper.selectById(userId);
+        if (user == null) throw new BusinessException(404, "用户不存在");
+        user.setNickname(request.getNickname().trim());
+        user.setPhone(StringUtils.hasText(request.getPhone()) ? request.getPhone().trim() : null);
+        user.setAvatar(StringUtils.hasText(request.getAvatar()) ? request.getAvatar().trim() : null);
+        if (sysUserMapper.updateById(user) != 1) throw new BusinessException(409, "资料保存失败，请重试");
+        return getCurrentUser(userId);
     }
 }

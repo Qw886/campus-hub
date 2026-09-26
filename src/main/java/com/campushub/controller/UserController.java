@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.campushub.dto.LoginRequest;
+import com.campushub.dto.UpdateProfileRequest;
 import com.campushub.vo.LoginResponse;
 import com.campushub.vo.UserProfileResponse;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 
 
 @RestController
@@ -50,6 +52,12 @@ public class UserController {
     ) {
 
         return Result.success(user);
+    }
+
+    @PutMapping("/me")
+    public Result<UserProfileResponse> updateMe(@Valid @RequestBody UpdateProfileRequest request,
+                                                 @AuthenticationPrincipal UserProfileResponse user) {
+        return Result.success(userService.updateProfile(user.getId(), request));
     }
 
 
