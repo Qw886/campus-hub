@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: campus_hub
+      MYSQL_USER: campus_app
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:?Set MYSQL_APP_PASSWORD in .env}
+      TZ: Asia/Shanghai
+    command: ["--default-time-zone=+08:00"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    mem_limit: 1536m
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/campus_hub?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: campus_app
+      CAMPUS_HUB_DB_PASSWORD: ${MYSQL_APP_PASSWORD:?Set MYSQL_APP_PASSWORD in .env}
+      CAMPUS_HUB_JWT_SECRET: ${CAMPUS_HUB_JWT_SECRET:?Set CAMPUS_HUB_JWT_SECRET in .env}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65 -Duser.timezone=Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - campus-uploads:/app/uploads
+    expose:
+      - "8080"
+    mem_limit: 768m
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    mem_limit: 128m
+
+volumes:
+  mysql-data:
+  campus-uploads:

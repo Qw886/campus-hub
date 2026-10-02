@@ -120,6 +120,78 @@ npm run dev
 
 浏览器访问终端显示的 `http://localhost:5173`。Vite 会把前端的 `/api` 请求代理到后端 `http://localhost:8080`。
 
+## 阿里云 ECS 部署（Docker）
+
+仓库已提供 `docker-compose.yml`，会启动 MySQL、Spring Boot 后端和 Nginx 前端。公网只开放网页的 80 端口；MySQL 和后端端口不映射到公网。数据库和用户上传的图片保存在 Docker 卷中，重建容器不会清空它们。
+
+### 1. 启动 ECS 并配置安全组
+
+在阿里云 ECS 控制台启动实例，等待状态变成“运行中”。安全组只添加：
+
+- TCP 80：来源 `0.0.0.0/0`，供浏览器访问网页。
+- TCP 22：来源设为“我的 IP”，用于 SSH；如果使用阿里云 Workbench，也按控制台提示配置。
+
+不要开放 3306（MySQL）或 8080（后端）。当前通过公网 IP 的 HTTP 适合演示和测试，不要在未配置 HTTPS 前放真实个人数据。
+
+### 2. 连接服务器并下载项目
+
+通过阿里云 Workbench 或 SSH 登录 Ubuntu，然后逐行执行：
+
+```bash
+sudo apt update
+sudo apt install -y git
+git clone https://github.com/Qw886/campus-hub.git
+cd campus-hub
+cp .env.example .env
+openssl rand -hex 24
+openssl rand -hex 24
+openssl rand -base64 48
+nano .env
+```
+
+将这三条随机命令输出的三串内容，分别填入 `.env` 中对应的数据库 root 密码、应用数据库密码和 JWT 密钥；删掉 `REPLACE_WITH...` 占位文字后保存。`nano` 保存：按 `Ctrl+O`、回车，再按 `Ctrl+X`。不要把 `.env` 发到聊天、截图或提交到 GitHub。
+
+### 3. 构建并启动
+
+仍在 `campus-hub` 目录执行：
+
+```bash
+docker compose config -q
+docker compose --parallel 1 up -d --build
+docker compose ps
+```
+
+首次构建需要下载基础镜像和 Maven、Node 依赖，可能要等几分钟。等 `mysql` 显示 `healthy`，然后在浏览器打开 `http://你的ECS公网IP`。当前实例公网 IP 是 `47.110.79.243` 时，访问 `http://47.110.79.243`。
+
+要查看后端启动情况：
+
+```bash
+docker compose logs -f backend
+```
+
+看到 Spring Boot 启动完成后按 `Ctrl+C` 退出日志查看（不会停止服务）。后续更新代码时，在项目目录执行 `git pull`，然后执行 `docker compose up -d --build`。
+
+### 4. 创建第一个管理员
+
+网页注册一个你自己选的用户名和密码（普通注册默认是学生）。然后在服务器项目目录执行 `docker compose exec mysql mysql -u root -p campus_hub`，按提示输入 `.env` 中的 `MYSQL_ROOT_PASSWORD`。进入 MySQL 后执行下面语句，把用户名换成刚注册的用户名：
+
+```sql
+UPDATE sys_user SET role = 'ADMIN' WHERE username = '你的管理员用户名';
+```
+
+执行 `exit` 退出数据库，再从网页退出并重新登录该账号；重新登录后才会拿到管理员权限。不要在生产服务器导入包含演示账号的 `sql/demo.sql`。以后组织者通过网页申请，管理员在管理页面审核；学生可自行注册测试报名。
+
+### 常用维护
+
+```bash
+docker compose ps                 # 查看服务状态
+docker compose logs --tail=100    # 查看最近日志
+docker compose restart backend    # 重启后端
+docker compose down               # 停止服务，保留数据库和上传图片
+```
+
+不要执行 `docker compose down -v`，`-v` 会删除数据库和图片数据卷。试用额度有限；暂时不用时可在 ECS 控制台停止实例，继续体验前再启动。
+
 活动状态：1待审核、2报名中、3已结束、4已取消、5审核拒绝。报名和取消报名在一个事务内先锁定活动行，避免并发超卖；代价是同一活动的并发写操作会排队。
 
 项目按 Asia/Shanghai 本地时间处理活动时间，部署时应用与数据库时区应保持一致。生产环境应使用受限数据库账号、HTTPS、备份和日志脱敏。
