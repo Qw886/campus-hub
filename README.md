@@ -53,7 +53,7 @@ CampusHub 是一个面向高校学生、活动组织者和管理员的校园活�
 
 项目通过环境变量读取数据库密码，不在仓库中保存敏感信息。
 
-1. 在 MySQL Workbench 中依次执行 `sql/schema.sql`、`sql/seed.sql`。
+1. 在 MySQL Workbench 中依次执行 `sql/schema.sql`、`sql/seed.sql`。`seed.sql` 会创建基础分类和 3 条可直接浏览的示例活动；示例活动归属于一个已禁用登录的系统账号，不会开放管理员权限。
 2. 在 IDEA 的运行配置中设置：
 
 ```text
@@ -63,6 +63,14 @@ CAMPUS_HUB_JWT_SECRET=至少32字节、标准Base64编码的密钥
 
 3. 启动 `CampusHubApplication`。
 4. 按下方命令启动前端，在浏览器打开 `http://localhost:5173`。
+
+如果数据库已经初始化过，重新执行 `seed.sql` 即可补充示例活动，不会删除真实用户或已有活动。在 Docker 部署的服务器项目目录中可执行：
+
+```bash
+docker compose exec -T mysql sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" campus_hub' < sql/seed.sql
+```
+
+执行后刷新网站首页；新访客注册并登录后即可浏览这些活动。
 
 接口清单见 [docs/API.md](docs/API.md)。公开接口可以直接访问；报名、签到、组织者和管理员接口需要登录并使用对应角色。
 
